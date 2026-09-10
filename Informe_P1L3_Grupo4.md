@@ -1,7 +1,7 @@
 # P1L3 — Laboratorio: Carga viva, sismo pseudoestático, superposición y capacidad HA
 
 **Edificio U. de los Andes — Proyecto 2017_67 · Grupo 4**
-Repositorio: `github.com/mauricio-lenz/P1L3_Grupo4` — commit `b478745`, tag **`P1L3-entrega`**
+Repositorio: `github.com/mauricio-lenz/P1L3_Grupo4` — tag de entrega **`P1L3-entrega`**
 
 - **Unidades:** SI coherente (m, kN, kN/m², kN·m).
 - **Modelo:** misma geometría y áreas tributarias de Semana 2 (`data/edificio_config.json`).
@@ -144,4 +144,4 @@ Semana 2. Figuras: `fig_M_phi_columna.png` (todas las curvas M-φ) y
    capacidad.
 
 **Reproducibilidad:** `requirements.txt`, `pytest` (5 pruebas), ejecutar
-`python -m src.run_all`. Entrega: commit `b478745`, tag `P1L3-entrega`.
+`python -m src.run_all`. Entrega: tag `P1L3-entrega`.
