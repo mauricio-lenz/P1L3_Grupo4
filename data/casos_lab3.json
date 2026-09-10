@@ -1,0 +1,60 @@
+{
+  "documento": "P1L3 - Casos base: carga viva, sismo pseudoestatico, superposicion y capacidad HA",
+  "proyecto": "Edificio U. de los Andes - Proyecto 2017_67 (misma geometria tributaria de Semana 2)",
+  "unidades": "SI coherente: longitud [m], fuerza [kN], tension/modulo [kN/m2], momento [kN*m], gravedad [m/s2]",
+  "nota_general": "Todos los parametros de este archivo pueden ser modificados por el profesor sin tocar el codigo: intensidad q_Q, fraccion de g del sismo, patron de fuerzas sismicas manuales, lambdas de superposicion y parametros de la seccion HA (parte D).",
+
+  "carga_viva_q_Q_kN_m2": {
+    "nota": "Uso educacional/oficinas NCh1537 equivalente: 3.0 kN/m2 en los 4 niveles de piso; cubierta 1.5 kN/m2.",
+    "Subterraneo": 3.0,
+    "Piso1": 3.0,
+    "Piso2": 3.0,
+    "Piso3": 3.0,
+    "Piso4": 1.5
+  },
+
+  "sismo_pseudoestatico": {
+    "nota": "Fuerza lateral aplicada en el centro de masa (CM) de cada piso. W_i = peso propio + 50% de la sobrecarga de uso. Ejemplo de la enunciacion: NCh433 define para el sitio una aceleracion basal de 20% g, por lo que F_i = 0.20 * W_i.",
+    "fraccion_g": 0.20,
+    "patron": "uniforme_por_piso",
+    "nota_patron": "El codigo acepta cualquier patron: dejar 'fuerzas_manuales_EX'/'EY' como lista de {nivel, fuerza_kN} para sobreescribir el patron uniforme.",
+    "fuerzas_manuales_EX": null,
+    "fuerzas_manuales_EY": null,
+    "fraccion_sobrecarga_masa": 0.50
+  },
+
+  "superposicion": {
+    "nota": "R = lG*G + lQ*Q + lEX*EX + lEY*EY. Las cargas se aplican por areas tributarias (misma geometria de Semana 2) y por fuerzas laterales en CM.",
+    "lambdas": {
+      "G": 1.00,
+      "Q": 1.00,
+      "EX": 0.90,
+      "EY": 0.75
+    }
+  },
+
+  "cap_hormigon": {
+    "nota": "Seccion de columna P-70x70 con fibra. H30 (fc = 25 MPa, igual que Semana 2), acero G420 fy = 420 MPa.",
+    "b_m": 0.70,
+    "h_m": 0.70,
+    "fc_MPa": 25,
+    "fy_MPa": 420,
+    "Es_GPa": 200,
+    "recubrimiento_libre_m": 0.05,
+    "refuerzo_longitudinal": { "n_barras": 8, "diametro_m": 0.025, "nota": "8 barras perimetrales (2 por cara) - armado asumido de diseno" },
+    "discretizacion": {
+      "n_divisiones_nucleo": 12,
+      "n_divisiones_recubrimiento": 4
+    },
+    "materiales_no_lineales": {
+      "Concrete01": { "fpc_kN_m2": -25000, "epsc0": -0.002, "fpcu_kN_m2": -21000, "epsu": -0.0038 },
+      "Steel01": { "fy_kN_m2": 420000, "Es_kN_m2": 200000000, "b_ratio": 0.01 }
+    }
+  },
+
+  "elementos_a_verificar": {
+    "nota": "Elementos de control para la verificacion de fuerza interna (Parte C). Se resuelven por indices de grilla.",
+    "columna_critica": { "eje_x": "Eje I'", "eje_y": "Eje 1", "nivel": "Piso1" },
+    "viga_verificacion": { "tipo": "X", "i": 0, "j": 0, "nivel": "Piso2" }
+  }
+}

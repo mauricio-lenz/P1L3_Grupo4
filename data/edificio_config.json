@@ -1,0 +1,98 @@
+{
+  "proyecto": "Edificio U. de los Andes - Proyecto 2017_67 - Grupo 4",
+  "unidades": "SI coherente: longitud [m], fuerza [kN], tension/modulo [kN/m2], momento [kN*m]",
+  "nota": "Geometria extraida de los planos DXF 2017_67 (series 100-103 estructura). Escala 1 u DXF = 1 cm = 0.01 m verificada (columna 70 u = 0.70 m, tramo 1000 u = 10 m). Columnas P.70x70, vigas V.60/80, losa e=15 cm, altura entre pisos 3.96 m.",
+
+  "grilla_ejes": {
+    "nota": "Ejes reales del edificio (cluster Piso 2/3, plano 102). Valores en metros. Los sub-ejes del nucleo (2a) se omiten del modelo de porticos.",
+    "X": { "Eje E": 8.932, "Eje F": 18.932, "Eje G": 28.932, "Eje H": 38.932, "Eje I": 48.932, "Eje I'": 53.932 },
+    "Y": { "Eje 3": 62.880, "Eje 2": 70.131, "Eje 1": 79.031 }
+  },
+
+  "niveles": {
+    "nota": "Cota Z (m) de cada nivel. base = cota del empotramiento (apoyos). Altura de piso 3.96 m uniforme (1er Subt -> Piso 4).",
+    "base": 0.0,
+    "Subterraneo": 3.96,
+    "Piso1": 7.92,
+    "Piso2": 11.88,
+    "Piso3": 15.84,
+    "Piso4": 19.80
+  },
+
+  "materiales": {
+    "H30": { "E": 23500000.0, "nu": 0.20, "gamma": 25.0 },
+    "Acero_A36": { "E": 200000000.0, "nu": 0.30, "gamma": 78.5 }
+  },
+
+  "secciones_tipo": {
+    "nota": "Secciones de los planos: columna P.70x70, viga V.60/80, muro e=20 cm (nucleo).",
+    "vigas": {
+      "V-60x80": { "b": 0.60, "h": 0.80, "material": "H30" }
+    },
+    "columnas": {
+      "P-70x70": { "b": 0.70, "h": 0.70, "material": "H30" }
+    },
+    "muros": {
+      "MW-20": { "t": 0.20, "material": "H30" }
+    },
+    "diagonales": {
+      "D-100x10": { "A": 0.002, "material": "Acero_A36" }
+    }
+  },
+
+  "asignaciones": {
+    "nota": "Seccion por nivel. Todas iguales en este modelo (estandar en todos los niveles).",
+    "columnas_por_nivel": {
+      "Subterraneo": "P-70x70", "Piso1": "P-70x70", "Piso2": "P-70x70",
+      "Piso3": "P-70x70", "Piso4": "P-70x70"
+    },
+    "vigas_por_nivel": {
+      "Subterraneo": "V-60x80", "Piso1": "V-60x80", "Piso2": "V-60x80",
+      "Piso3": "V-60x80", "Piso4": "V-60x80"
+    }
+  },
+
+  "cargas": {
+    "nota": "qG = peso propio losa (e=0.15 m, gamma=25) + terminaciones. piso: 25*0.15 + 1.5 = 5.25 kN/m2; cubierta: 25*0.15 + 0.5 = 4.25 kN/m2.",
+    "qG": {
+      "Subterraneo": 5.25,
+      "Piso1": 5.25,
+      "Piso2": 5.25,
+      "Piso3": 5.25,
+      "Piso4": 4.25
+    },
+    "g": 9.81,
+    "puntuales": []
+  },
+
+  "arriostramientos": {
+    "nota": "El edificio no presenta diagonales de arriostramiento en los planos; se deja el patron vacio (0 diagonales).",
+    "patron": "X",
+    "frames_Y": [],
+    "desde_nivel": "Subterraneo",
+    "hasta_nivel": "Piso4",
+    "seccion": "D-100x10"
+  },
+
+  "muros": {
+    "nota": "Muros equivalentes del nucleo (escaleras/ascensores), espesor e=20 cm, sobre ejes de columnas para conectar con la grilla.",
+    "lista": [
+      { "nombre": "Muro-nucleo-largo", "orientacion": "Y", "linea": "Eje F",
+        "desde_eje": "Eje 3", "hasta_eje": "Eje 1",
+        "seccion": "MW-20", "desde_nivel": "Subterraneo", "hasta_nivel": "Piso4" },
+      { "nombre": "Muro-nucleo-corto", "orientacion": "X", "linea": "Eje 2",
+        "desde_eje": "Eje E", "hasta_eje": "Eje F",
+        "seccion": "MW-20", "desde_nivel": "Subterraneo", "hasta_nivel": "Piso4" }
+    ]
+  },
+
+  "voladizos": {
+    "nota": "Voladizo al este (eje J) visto en elevaciones EJE 2, 1-1' y 3-3' (planos 302/300/303). Eje J a 5.00 m al este de I' (58.932 m). Ancho completo entre Eje 3 y Eje 1. Viga cantilever V-60x80 I'->J en Piso3 y Piso4 (los dos entrepisos superiores); losa saliente 1.0 m mas alla de J (fascia 59.932 m). Sin columnas en J (no existe columna de altura completa).",
+    "lista": [
+      { "nombre": "Voladizo-eje-J", "desde_eje": "Eje I'", "hasta_eje": "Eje J",
+        "x_j_m": 58.932, "niveles": ["Piso3", "Piso4"],
+        "seccion_viga": "V-60x80", "ancho_saliente_m": 1.0,
+        "ejes_Y": ["Eje 3", "Eje 2", "Eje 1"] }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+results/figures/
+results/csv/
+results/export/
+*.out
+
+# Windows
+Thumbs.db
+desktop.ini
