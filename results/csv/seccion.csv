@@ -1,0 +1,16 @@
+propiedad,valor
+b_m,0.7
+h_m,0.7
+Ag_m2,0.48999999999999994
+n_barras,8
+diam_m,0.025
+As_m2,0.003926990816987242
+cuantia,0.008014266973443351
+recubrimiento_m,0.05
+fc_MPa,25
+fy_MPa,420
+Es_kN_m2,200000000.0
+d_m,0.6499999999999999
+Ec_kN_m2,23500000.0
+EI_gross_kN_m2,470195.8333333332
+eps_core,-0.0038
