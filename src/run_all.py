@@ -88,8 +88,9 @@ def main():
     cmp_ = sup.comparar(comb, expl, cfg)
 
     # Demanda de la columna critica (combinacion) para marcar P-M
+    #   P_ops < 0 = compresion (convencion OpenSees)
     f_col = expl.fuerzas["columna_critica"]
-    demanda_pm = {"P": float(f_col[0]),
+    demanda_pm = {"P_ops": float(f_col[0]),
                   "M": float(np.hypot(f_col[4], f_col[5]))}
 
     # ---- Parte D: capacidad de la columna
@@ -129,15 +130,11 @@ def main():
           round(ws["Q_kN"], 1), round(ws["W_kN"], 1)]
          for lvl, ws in geo.pesos_sismicos(cfg, casos).items()],
         "nivel,area_m2,PP_kN,Q_kN,W_kN")
-    body = []
-    for P in curvas_pm["Ps"]:
-        if P == curvas_pm["P_axial"]:     # punto de compresion axial pura (M=0)
-            body.append([P, 0.0, 0.0, 0.0, 0.0])
-            continue
-        phis, Ms = curvas_pm["curvas"][P]
-        i = int(np.argmax(Ms))
-        body.append([P, Ms.max(), phis[i], Ms[-1], phis[-1]])
-    _guardar_csv("cap_pm.csv", body, "P_kN,Mu_kN_m,phi_Mu,tail_M,tail_phi")
+    _guardar_csv(
+        "cap_pm.csv",
+        [[pt["nombre"], round(pt["P"], 1), round(pt["M"], 1)]
+         for pt in curvas_pm["puntos"]],
+        "punto,P_kN_compresion_positiva,M_kN_m")
     _guardar_csv(
         "seccion.csv",
         [[k, v] for k, v in prop_sec.items()],
@@ -170,11 +167,12 @@ def main():
     print("Parte D: seccion %.0fx%.0f, As=%.2f cm2, cuantia=%.4f"
           % (prop_sec["b_m"] * 100, prop_sec["h_m"] * 100,
              prop_sec["As_m2"] * 1e4, prop_sec["cuantia"]))
-    print("   Puntos P-M (primeros):")
-    for P, M in zip(curvas_pm["Ps"], curvas_pm["Mu"]):
-        print("     P = %+7.0f kN   ->  Mu = %7.1f kN-m" % (P, M))
-    print("   Demanda columna critica: P = %.1f kN, M = %.1f kN-m"
-          % (demanda_pm["P"], demanda_pm["M"]))
+    print("   Puntos caracteristicos del diagrama de interaccion P-M:")
+    for pt in curvas_pm["puntos"]:
+        print("     %-24s P = %+8.1f kN   M = %7.1f kN-m"
+              % (pt["nombre"], pt["P"], pt["M"]))
+    print("   Demanda columna critica: P = %.1f kN (comp.), M = %.1f kN-m"
+          % (-demanda_pm["P_ops"], demanda_pm["M"]))
     print("   Curvatura de fluencia estimada (d=%.2f m): %.5f 1/m"
           % (prop_sec["d_m"],
              prop_sec["fy_MPa"] * 1e3 / prop_sec["Es_kN_m2"]

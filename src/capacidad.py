@@ -234,37 +234,131 @@ def graficar_phi_mu(Ps, curvas, out_file, demandas=None):
     plt.close(fig)
 
 
-def capacidad_axial_pura(cfg):
-    """Capacidad axial pura de la columna (compresion, kN, signo negativo):
+EC_U = 0.003                 # deformacion ultima del concreto no confinado
+EPS_T_COM_CONTROL = 0.002    # limite control de compresion (ACI 318, estribada)
 
-        P_o = 0.85 fc' (Ag - As) + fy As     (ACI 318, columna estribada)
 
-    Es el punto superior de la interaccion P-M (M = 0).
+def _esfuerzos_seccion(cfg, c):
+    """Esfuerzos P-M por compatibilidad de deformaciones (bloque de Whitney).
+
+    Convencion: P positivo = compresion; M sobre el eje centroidal. Recibe
+    la profundidad `c` del eje neutro desde el borde comprimido y devuelve
+    (P, M) en kN y kN-m para una deformacion de borde eps_c = 0.003.
+
+    Acero distribuido en 3 capas (eje fuerte de los 8 phi25: 3 + 2 + 3).
     """
     p = propiedades_seccion(cfg)
-    fc = p["fc_MPa"] * 1e3              # MPa -> kN/m2
+    b, h = p["b_m"], p["h_m"]
+    fc = p["fc_MPa"] * 1e3
     fy = p["fy_MPa"] * 1e3
-    return -(0.85 * fc * (p["Ag_m2"] - p["As_m2"]) + fy * p["As_m2"])
+    Es = p["Es_kN_m2"]
+    As_bar = p["As_m2"] / p["n_barras"]
+    cover = p["recubrimiento_m"]
+    capas = [(cover, 3), (h / 2.0, 2), (h - cover, 3)]  # (dist. desde borde, n)
+
+    a = min(0.85 * c, h)                       # bloque rectangular de Whitney
+    C = 0.85 * fc * b * a
+    P = C
+    M = C * (h / 2.0 - a / 2.0)
+    for depth, n in capas:
+        eps = EC_U * (1.0 - depth / c)
+        fs = min(max(Es * eps, -fy), fy)
+        F = n * As_bar * fs
+        P += F
+        M += F * (h / 2.0 - depth)
+    return P, M
 
 
-def graficar_punto_pm(cfg, Ps, Mu, out_file, demanda=None):
-    """Primeros puntos de la curva de interaccion P-M (Mu max de M-phi).
+def _c_por_eps_t(cfg, eps_t):
+    """Profundidad del eje neutro para una deformacion dada del acero
+    extremo en traccion (traccion + compresion en borde = 0.003)."""
+    p = propiedades_seccion(cfg)
+    d = p["d_m"]
+    return d * EC_U / (EC_U + eps_t)
 
-    Incluye el punto de compresion axial pura (M = 0) para que la curva
-    cierre arriba y muestre el cambio de pendiente alrededor del punto
-    balanceado.
+
+def puntos_interaccion(cfg):
+    """Los 5 puntos caracteristicos del diagrama de interaccion P-M.
+
+        P_o  = compresion axial pura: 0.85 fc'(Ag-As) + fy As    (M = 0)
+        cc   = control de compresion: eps_t = 0.002 en acero extremo
+        bal  = condicion balanceada:  eps_t = eps_y = fy/Es
+        flex = flexion pura:          P = 0
+        ten  = tension axial pura:    todo el acero fluye a traccion (M = 0)
+
+    Convencion: P positivo = compresion (los puntos axiales caen sobre el
+    eje Y, con M = 0). Devuelve lista de dicts {nombre, P, M}.
     """
-    fig, ax = plt.subplots(figsize=(6.2, 4.8))
-    idxy = np.argsort(Ps)
-    ax.plot(Mu[idxy], Ps[idxy], "o-", lw=1.7, ms=5,
-            label="Puntos P-M (M$_u$)")
+    p = propiedades_seccion(cfg)
+    fc = p["fc_MPa"] * 1e3
+    fy = p["fy_MPa"] * 1e3
+    Es = p["Es_kN_m2"]
+    ey = fy / Es
+
+    # 1) Compresion axial pura (M = 0, sobre el eje Y)
+    P_axial = 0.85 * fc * (p["Ag_m2"] - p["As_m2"]) + fy * p["As_m2"]
+
+    # 2) Control de compresion (borde de la zona controlada por compresion)
+    P_cc, M_cc = _esfuerzos_seccion(cfg, _c_por_eps_t(cfg, EPS_T_COM_CONTROL))
+
+    # 3) Condicion balanceada (acero extremo en fluencia simultanea)
+    P_bal, M_bal = _esfuerzos_seccion(cfg, _c_por_eps_t(cfg, ey))
+
+    # 4) Flexion pura: P(c) decrece con c (P<0 en traccion profunda).
+    #    mantener lo con P<0 y hi con P>0.
+    lo, hi = 1e-4, _c_por_eps_t(cfg, ey)
+    for _ in range(300):
+        c = 0.5 * (lo + hi)
+        if _esfuerzos_seccion(cfg, c)[0] > 0:
+            hi = c
+        else:
+            lo = c
+    P_flex, M_flex = _esfuerzos_seccion(cfg, 0.5 * (lo + hi))
+
+    # 5) Tension axial pura (M = 0, sobre el eje Y)
+    P_tension = -fy * p["As_m2"]
+
+    return [
+        {"nombre": "Compresion axial pura", "P": P_axial, "M": 0.0},
+        {"nombre": "Control de compresion", "P": P_cc, "M": M_cc},
+        {"nombre": "Condicion balanceada", "P": P_bal, "M": M_bal},
+        {"nombre": "Flexion pura", "P": P_flex, "M": M_flex},
+        {"nombre": "Tension axial pura", "P": P_tension, "M": 0.0},
+    ]
+
+
+def graficar_interaccion(cfg, puntos, out_file, demanda=None, fibras=None):
+    """Diagrama de interaccion P-M (5 puntos caracteristicos).
+
+    P (compresion positiva) en el eje Y, M en el eje X. El primer y el
+    ultimo punto (compresion y tension axial pura) caen sobre el eje Y
+    (M = 0) con el quiebre de pendiente alrededor del punto balanceado.
+
+    `fibras` = {"Ps_ops": [...], "Mu": [...]} para superponer la validacion
+    con el maximo M de las curvas M-phi (OpenSees, P ops negativo).
+    """
+    Ps = [pt["P"] for pt in puntos]
+    Ms = [pt["M"] for pt in puntos]
+    fig, ax = plt.subplots(figsize=(6.4, 6.2))
+    ax.axvline(0, c="k", lw=0.8, alpha=0.4, ls="--", zorder=0)
+    ax.plot(Ms, Ps, "o-", lw=1.8, ms=6, color="#0b5394", zorder=3,
+            label="Curva de interaccion P-M")
+    if fibras is not None:
+        Ps_f = [-float(P) for P in fibras["Ps_ops"]]
+        ax.plot(fibras["Mu"], Ps_f, "o", ms=6, mfc="none", mec="#e06666",
+                zorder=2, label="Max M-phi (fiber section)")
     if demanda is not None:
-        ax.plot(demanda["M"], demanda["P"], "r*", ms=16,
+        ax.plot(demanda["M"], -demanda["P_ops"], "r*", ms=20, zorder=4,
                 label="Demanda max (G,Q,EX,EY)")
-    ax.set_xlabel("Momento ultimo M$_u$ [kN-m]")
-    ax.set_ylabel("Carga axial P [kN] (negativo = compresion)")
+    for pt in puntos:
+        ax.annotate(pt["nombre"], (pt["M"], pt["P"]),
+                    textcoords="offset points", xytext=(9, 7),
+                    fontsize=7.5, zorder=5)
+    ax.set_xlabel("Momento flector M [kN-m]")
+    ax.set_ylabel("Carga axial P [kN]   (arriba = compresion)")
+    ax.set_ylim(1.25 * min(Ps), 1.03 * max(Ps))
     ax.grid(True, alpha=0.3)
-    ax.legend(fontsize=8)
+    ax.legend(fontsize=8, loc="upper right")
     plt.tight_layout()
     plt.savefig(out_file, dpi=150)
     plt.close(fig)
@@ -273,10 +367,14 @@ def graficar_punto_pm(cfg, Ps, Mu, out_file, demanda=None):
 def run_capacidad(cfg, outdir, P_grid=None, demanda=None):
     """Ejecuta toda la parte D y guarda figuras + curvas.
 
-    Puntos de la curva P-M (5): compresion axial pura (M=0) + 4 niveles de
-    carga axial de las curvas M-phi.
+    1. Diagrama de interaccion P-M con los 5 puntos caracteristicos
+       (compresion axial, control de compresion, balanceada, flexion pura,
+       tension axial) por compatibilidad de deformaciones + Whitney.
+    2. Validacion del overlay: maximo M de las curvas M-phi de la seccion
+       de fibras (OpenSees) para los niveles de carga axial de P_grid.
 
-    Devuelve dict con curvas y Puntos P-M.
+    `demanda` (opcional): {"P_ops": float, "M": float} con P_ops negativo
+    = compresion (convencion OpenSees). Devuelve dict con los puntos.
     """
     if P_grid is None:
         P_grid = np.array([-5000.0, -3000.0, -1000.0, 0.0])
@@ -284,16 +382,14 @@ def run_capacidad(cfg, outdir, P_grid=None, demanda=None):
     for P in P_grid:
         curvas[P] = moment_curvature(cfg, P)
     Mu = np.array([np.max(Ms) for _, Ms in curvas.values()])
-    Ps = np.array([float(p) for p in curvas.keys()])
+    Ps_ops = np.array([float(p) for p in curvas.keys()])
 
-    # Punto de compresion axial pura (M = 0) al tope de la curva
-    P_axial = capacidad_axial_pura(cfg)
-    Ps_curve = np.concatenate(([P_axial], Ps))
-    Mu_curve = np.concatenate(([0.0], Mu))
+    puntos = puntos_interaccion(cfg)
+    P_axial = puntos[0]["P"]
 
     graficar_seccion(cfg, outdir / "fig_seccion_fibras.png")
-    graficar_phi_mu(Ps, curvas, outdir / "fig_M_phi_columna.png")
-    graficar_punto_pm(cfg, Ps_curve, Mu_curve, outdir / "fig_PM_columna.png",
-                      demanda=demanda)
-    return {"Ps": Ps_curve, "Mu": Mu_curve, "curvas": curvas,
-            "P_axial": P_axial}
+    graficar_phi_mu(Ps_ops, curvas, outdir / "fig_M_phi_columna.png")
+    graficar_interaccion(cfg, puntos, outdir / "fig_PM_columna.png",
+                         demanda=demanda, fibras={"Ps_ops": Ps_ops, "Mu": Mu})
+    return {"puntos": puntos, "P_axial": P_axial,
+            "Ps_ops": Ps_ops, "Mu": Mu, "curvas": curvas}

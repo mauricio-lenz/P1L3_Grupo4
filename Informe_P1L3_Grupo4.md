@@ -112,22 +112,29 @@ cintas de recubrimiento `patch`, refuerzo → `layer straight` 3/3/1/1 barras.
 Figuras: `results/figures/fig_seccion_fibras.png` (discretización: 192
 fibras de concreto + 8 de acero), materiales y convenciones en la figura.
 
-**Momentos máximos (primeros puntos P–M)**, de la curva M-φ de cada nivel de
-carga axial (`results/csv/cap_pm.csv`; P < 0 = compresión, convención
-OpenSees):
+**Diagrama de interacción P–M** con los **5 puntos característicos**,
+calculado por **compatibilidad de deformaciones** (deformación de borde
+`εc = 0.003`, bloque rectangular de Whitney `a = β1·c`, `β1 = 0.85`) y
+validado contra el máximo M de las curvas M-φ de la Fiber Section
+(`results/csv/cap_pm.csv`, ![P][p-pos] positivo = compresión):
 
-| P [kN] | M_u [kN·m] | φ@M_u [1/m] |
-|-------:|-----------:|------------:|
-| −11978 (compresión axial pura) | 0 | — |
-| −5000 | 1316.8 | 0.00785 |
-| −3000 | 1168.8 | 0.01070 |
-| −1000 | 820.5 | 0.03150 |
-| 0 | 575.9 | 0.0600 (no alcanza pico en rango) |
+[p-pos]: # "convención del diagrama"
 
-El punto de compresión axial pura (M = 0) se obtiene con
-`0.85·fc'·(Ag − As) + fy·As` (ACI 318) y cierra la interacción por arriba; el
-cambio de pendiente brusco aparece alrededor del punto balanceado
-(P ≈ −5000 kN, donde M_u es máximo).
+| Punto | P [kN] | M [kN·m] |
+|------:|-------:|---------:|
+| Compresión axial pura (M = 0, sobre el eje Y) | +11978 | 0 |
+| Control de compresión (εt = 0.002) | +5021 | 1271 |
+| Condición balanceada (εt = fy/Es) | +4884 | 1278 |
+| Flexión pura (P = 0) | 0 | 512 |
+| Tensión axial pura (M = 0, sobre el eje Y) | −1649 | 0 |
+
+- **Compresión axial pura**: `P_o = 0.85·fc'·(Ag − As) + fy·As` (ACI 318).
+- **Balanceada**: `c_b = d·εcu/(εcu + εy)`; acero extremo en fluencia
+  simultánea con falla de concreto → aquí el diagrama cambia de pendiente
+  bruscamente (controlado por compresión arriba, por tracción abajo).
+- **Tensión axial pura**: todo el acero fluye a tracción → `P = −fy·As`.
+- El primer y el último punto están sobre el eje Y (M = 0), como corresponde
+  al diagrama de interacción.
 
 En la curva P–M se marca la **demanda** de la columna crítica en el caso
 combinado (Parte C): **P = −1315.5 kN, M = 26.5 kN·m**, holgadamente dentro
@@ -143,9 +150,10 @@ Semana 2. Figuras: `fig_M_phi_columna.png` (todas las curvas M-φ) y
    torsión de piso; corte basal, deformada y Rz verificados.
 3. La superposición R = G + Q + 0.9EX + 0.75EY es idéntica a la corrida
    explícita (error 4.4e-15), validando el uso de casos unitarios lineales.
-4. La Fiber Section reproduce una interacción P–M de columna HA razonable
-   (M_u ≈ 576–1317 kN·m según P) y la demanda queda muy por debajo de la
-   capacidad.
+4. El diagrama de interacción P–M con los 5 puntos característicos
+   (compresión axial, control de compresión, balanceada, flexión pura,
+   tensión axial) reproduce la curva de capacidad HA esperada y la demanda
+   queda muy por debajo de la capacidad (uso ≈ 3 %).
 
 **Reproducibilidad:** `requirements.txt`, `pytest` (5 pruebas), ejecutar
 `python -m src.run_all`. Entrega: tag `P1L3-entrega`.
