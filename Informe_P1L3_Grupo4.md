@@ -123,12 +123,16 @@ validado contra el máximo M de las curvas M-φ de la Fiber Section
 | Punto | P [kN] | M [kN·m] |
 |------:|-------:|---------:|
 | Compresión axial pura (M = 0, sobre el eje Y) | +11978 | 0 |
-| Control de compresión (εt = 0.002) | +5021 | 1271 |
+| Compresión de flexión menor (c = h, ε = 0 en fibra traccionada) | +9827 | 631 |
 | Condición balanceada (εt = fy/Es) | +4884 | 1278 |
-| Flexión pura (P = 0) | 0 | 512 |
+| Flexión pura (P = 0) | 0 | 513 |
 | Tensión axial pura (M = 0, sobre el eje Y) | −1649 | 0 |
 
 - **Compresión axial pura**: `P_o = 0.85·fc'·(Ag − As) + fy·As` (ACI 318).
+- **Compresión de flexión menor**: el eje neutro coincide con la cara
+  traccionada (`c = h`); toda la sección está comprimida (ε = 0 en la fibra
+  más traccionada) → carga axial muy alta con momento pequeño
+  (excentricidad e ≈ 0.064 m).
 - **Balanceada**: `c_b = d·εcu/(εcu + εy)`; acero extremo en fluencia
   simultánea con falla de concreto → aquí el diagrama cambia de pendiente
   bruscamente (controlado por compresión arriba, por tracción abajo).
@@ -151,7 +155,7 @@ Semana 2. Figuras: `fig_M_phi_columna.png` (todas las curvas M-φ) y
 3. La superposición R = G + Q + 0.9EX + 0.75EY es idéntica a la corrida
    explícita (error 4.4e-15), validando el uso de casos unitarios lineales.
 4. El diagrama de interacción P–M con los 5 puntos característicos
-   (compresión axial, control de compresión, balanceada, flexión pura,
+   (compresión axial, compresión de flexión menor, balanceada, flexión pura,
    tensión axial) reproduce la curva de capacidad HA esperada y la demanda
    queda muy por debajo de la capacidad (uso ≈ 3 %).
 

@@ -66,7 +66,9 @@ def test_puntos_interaccion(cfg):
     assert pts[0]["M"] == 0.0
     assert pts[0]["P"] == pytest.approx(0.85 * 25e3 * (0.49 - 8 * np.pi * 0.025**2 / 4)
                                         + 420e3 * 8 * np.pi * 0.025**2 / 4, rel=1e-6)
-    assert pts[1]["P"] > pts[2]["P"] > 0  # cc > balanceada
+    assert pts[1]["nombre"] == "Compresion flexion menor"
+    assert pts[1]["M"] > 0 and pts[1]["P"] < pts[0]["P"]  # cerca de axial, con M
+    assert pts[1]["P"] > pts[2]["P"] > 0                  # cfm > balanceada
     assert pts[1]["M"] > 0 and pts[2]["M"] > 0
     assert pts[3]["nombre"] == "Flexion pura"
     assert abs(pts[3]["P"]) < 1.0

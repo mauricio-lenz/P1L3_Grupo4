@@ -235,7 +235,6 @@ def graficar_phi_mu(Ps, curvas, out_file, demandas=None):
 
 
 EC_U = 0.003                 # deformacion ultima del concreto no confinado
-EPS_T_COM_CONTROL = 0.002    # limite control de compresion (ACI 318, estribada)
 
 
 def _esfuerzos_seccion(cfg, c):
@@ -280,8 +279,9 @@ def _c_por_eps_t(cfg, eps_t):
 def puntos_interaccion(cfg):
     """Los 5 puntos caracteristicos del diagrama de interaccion P-M.
 
-        P_o  = compresion axial pura: 0.85 fc'(Ag-As) + fy As    (M = 0)
-        cc   = control de compresion: eps_t = 0.002 en acero extremo
+        P_o  = compresion axial pura: 0.85 fc'(Ag-As) + fy As     (M = 0)
+        cfm  = compresion de flexion menor: NA en la cara
+               traccionada (c = h, toda la seccion comprimida)
         bal  = condicion balanceada:  eps_t = eps_y = fy/Es
         flex = flexion pura:          P = 0
         ten  = tension axial pura:    todo el acero fluye a traccion (M = 0)
@@ -298,8 +298,9 @@ def puntos_interaccion(cfg):
     # 1) Compresion axial pura (M = 0, sobre el eje Y)
     P_axial = 0.85 * fc * (p["Ag_m2"] - p["As_m2"]) + fy * p["As_m2"]
 
-    # 2) Control de compresion (borde de la zona controlada por compresion)
-    P_cc, M_cc = _esfuerzos_seccion(cfg, _c_por_eps_t(cfg, EPS_T_COM_CONTROL))
+    # 2) Compresion de flexion menor: NA en la cara traccionada (c = h),
+    #    la fibra mas traccionada esta justo en epsilon = 0.
+    P_cfm, M_cfm = _esfuerzos_seccion(cfg, p["h_m"])
 
     # 3) Condicion balanceada (acero extremo en fluencia simultanea)
     P_bal, M_bal = _esfuerzos_seccion(cfg, _c_por_eps_t(cfg, ey))
@@ -320,7 +321,7 @@ def puntos_interaccion(cfg):
 
     return [
         {"nombre": "Compresion axial pura", "P": P_axial, "M": 0.0},
-        {"nombre": "Control de compresion", "P": P_cc, "M": M_cc},
+        {"nombre": "Compresion flexion menor", "P": P_cfm, "M": M_cfm},
         {"nombre": "Condicion balanceada", "P": P_bal, "M": M_bal},
         {"nombre": "Flexion pura", "P": P_flex, "M": M_flex},
         {"nombre": "Tension axial pura", "P": P_tension, "M": 0.0},
@@ -368,8 +369,8 @@ def run_capacidad(cfg, outdir, P_grid=None, demanda=None):
     """Ejecuta toda la parte D y guarda figuras + curvas.
 
     1. Diagrama de interaccion P-M con los 5 puntos caracteristicos
-       (compresion axial, control de compresion, balanceada, flexion pura,
-       tension axial) por compatibilidad de deformaciones + Whitney.
+       (compresion axial, compresion de flexion menor, balanceada, flexion
+       pura, tension axial) por compatibilidad de deformaciones + Whitney.
     2. Validacion del overlay: maximo M de las curvas M-phi de la seccion
        de fibras (OpenSees) para los niveles de carga axial de P_grid.
 
