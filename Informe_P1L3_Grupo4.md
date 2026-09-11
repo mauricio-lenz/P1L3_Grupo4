@@ -118,12 +118,16 @@ OpenSees):
 
 | P [kN] | M_u [kN·m] | φ@M_u [1/m] |
 |-------:|-----------:|------------:|
-| −7000 | 1207.1 | 0.00515 |
+| −11978 (compresión axial pura) | 0 | — |
 | −5000 | 1316.8 | 0.00785 |
 | −3000 | 1168.8 | 0.01070 |
 | −1000 | 820.5 | 0.03150 |
 | 0 | 575.9 | 0.0600 (no alcanza pico en rango) |
-| +500 | 432.9 | 0.0600 |
+
+El punto de compresión axial pura (M = 0) se obtiene con
+`0.85·fc'·(Ag − As) + fy·As` (ACI 318) y cierra la interacción por arriba; el
+cambio de pendiente brusco aparece alrededor del punto balanceado
+(P ≈ −5000 kN, donde M_u es máximo).
 
 En la curva P–M se marca la **demanda** de la columna crítica en el caso
 combinado (Parte C): **P = −1315.5 kN, M = 26.5 kN·m**, holgadamente dentro

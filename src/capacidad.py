@@ -234,8 +234,26 @@ def graficar_phi_mu(Ps, curvas, out_file, demandas=None):
     plt.close(fig)
 
 
+def capacidad_axial_pura(cfg):
+    """Capacidad axial pura de la columna (compresion, kN, signo negativo):
+
+        P_o = 0.85 fc' (Ag - As) + fy As     (ACI 318, columna estribada)
+
+    Es el punto superior de la interaccion P-M (M = 0).
+    """
+    p = propiedades_seccion(cfg)
+    fc = p["fc_MPa"] * 1e3              # MPa -> kN/m2
+    fy = p["fy_MPa"] * 1e3
+    return -(0.85 * fc * (p["Ag_m2"] - p["As_m2"]) + fy * p["As_m2"])
+
+
 def graficar_punto_pm(cfg, Ps, Mu, out_file, demanda=None):
-    """Primeros puntos de la curva de interaccion P-M (Mu max de M-phi)."""
+    """Primeros puntos de la curva de interaccion P-M (Mu max de M-phi).
+
+    Incluye el punto de compresion axial pura (M = 0) para que la curva
+    cierre arriba y muestre el cambio de pendiente alrededor del punto
+    balanceado.
+    """
     fig, ax = plt.subplots(figsize=(6.2, 4.8))
     idxy = np.argsort(Ps)
     ax.plot(Mu[idxy], Ps[idxy], "o-", lw=1.7, ms=5,
@@ -255,18 +273,27 @@ def graficar_punto_pm(cfg, Ps, Mu, out_file, demanda=None):
 def run_capacidad(cfg, outdir, P_grid=None, demanda=None):
     """Ejecuta toda la parte D y guarda figuras + curvas.
 
+    Puntos de la curva P-M (5): compresion axial pura (M=0) + 4 niveles de
+    carga axial de las curvas M-phi.
+
     Devuelve dict con curvas y Puntos P-M.
     """
     if P_grid is None:
-        P_grid = np.array([-7000.0, -5000.0, -3000.0, -1000.0, 0.0, 500.0])
+        P_grid = np.array([-5000.0, -3000.0, -1000.0, 0.0])
     curvas = {}
     for P in P_grid:
         curvas[P] = moment_curvature(cfg, P)
     Mu = np.array([np.max(Ms) for _, Ms in curvas.values()])
     Ps = np.array([float(p) for p in curvas.keys()])
 
+    # Punto de compresion axial pura (M = 0) al tope de la curva
+    P_axial = capacidad_axial_pura(cfg)
+    Ps_curve = np.concatenate(([P_axial], Ps))
+    Mu_curve = np.concatenate(([0.0], Mu))
+
     graficar_seccion(cfg, outdir / "fig_seccion_fibras.png")
     graficar_phi_mu(Ps, curvas, outdir / "fig_M_phi_columna.png")
-    graficar_punto_pm(cfg, Ps, Mu, outdir / "fig_PM_columna.png",
+    graficar_punto_pm(cfg, Ps_curve, Mu_curve, outdir / "fig_PM_columna.png",
                       demanda=demanda)
-    return {"Ps": Ps, "Mu": Mu, "curvas": curvas}
+    return {"Ps": Ps_curve, "Mu": Mu_curve, "curvas": curvas,
+            "P_axial": P_axial}

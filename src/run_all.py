@@ -131,6 +131,9 @@ def main():
         "nivel,area_m2,PP_kN,Q_kN,W_kN")
     body = []
     for P in curvas_pm["Ps"]:
+        if P == curvas_pm["P_axial"]:     # punto de compresion axial pura (M=0)
+            body.append([P, 0.0, 0.0, 0.0, 0.0])
+            continue
         phis, Ms = curvas_pm["curvas"][P]
         i = int(np.argmax(Ms))
         body.append([P, Ms.max(), phis[i], Ms[-1], phis[-1]])
